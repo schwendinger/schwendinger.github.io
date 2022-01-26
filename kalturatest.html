@@ -1,0 +1,109 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+  <title>Title</title>
+ <script src="https://cdnapisec.kaltura.com/p/4174123/embedPlaykitJs/uiconf_id/48664263/"></script>
+ <!-- <script src="http://localhost/v3/41726401_uiconf_local"></script> -->
+  <style type="text/css">
+  	 /* demo styles */
+    body {
+      background-color: #212121;
+      padding: 0;
+      margin: 0;
+      text-align: center;
+    }   
+
+    #player-placeholder {
+      position: absolute;
+      margin: auto;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      width: 640px;
+      height: 360px;
+    }
+  
+  
+  </style>
+
+</head>
+<body>
+
+<div id="player-placeholder"></div>
+<script>
+
+    function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+
+    var mediaid = getParameterByName("mediaid");
+    var file = getParameterByName("file");
+    var ks = decodeURIComponent(getParameterByName("ks"));
+
+
+    var mediaInfo = {
+    	entryId: mediaid,
+    	formats: [file]//,
+      //"mediaType": "epg",
+      //"contextType": "START_OVER"
+    };
+
+    var playerConfig = {
+    	 targetId: "player-placeholder",
+        provider: {
+        partnerId: 3223,
+    		ks: ks,
+    		env: {
+    		  serviceUrl: 'https://api.frs1.ott.kaltura.com/api_v3'
+    		  }
+        },
+        player: {
+              playback: {
+                  autoplay: true,
+                  allowMutedAutoPlay: true,
+                  "options": {
+                      "html5": {
+                         "hls": {
+                           "maxBufferLength": 6,
+                           "maxBufferSize": 2000000,
+                           "maxMaxBufferLength": 40,
+                           "capLevelToPlayerSize": true,
+                           "debug": true,
+                           "appendErrorMaxRetry": 10
+                         }
+                       }
+                  }
+              },
+              drm: {
+                  keySystem: 'com.microsoft.playready'
+              }
+    	 }
+
+    };
+
+    var kalturaPlayer;
+
+    function getPlayer(playerConfig, mediaInfo) {
+        try {
+            kalturaPlayer = KalturaPlayer.setup(playerConfig);
+            kalturaPlayer.loadMedia(mediaInfo);
+            return kalturaPlayer;
+        } catch (e) {
+            console.error(e.message)
+        }
+    }
+
+    getPlayer(playerConfig, mediaInfo);
+</script>
+</body>
+</html>
