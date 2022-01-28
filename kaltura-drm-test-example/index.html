@@ -1,0 +1,169 @@
+<!-- This is an example of using the Shaka player library to play kaltura drm media on a STB.
+
+
+  I tested with the urls from the kaltura player playbackContext request and source format mpegdash
+  I compiled shaka player myself with the version 3.3.0
+
+	 Takes url parameters: (I set some defaults, probably stop working at some point (when the ks I used expires?))
+	      srcUrl {String} - URL of the media container 
+	      playreadyLicenseUrl {String} - URL of the playready license (used for drm on the box)
+	      widevineLicenseUrl {String} - URL of the widevine license (used if testing in chrome)
+ -->
+<html>
+  <head>
+    <title>Shaka Player library example for Horizon</title>
+
+    <script src="https://github.com/videojs/mux.js/releases/latest/download/mux.js"></script>
+    <!-- Shaka Player ui compiled library default CSS: -->
+    <script src="shaka-player/dist/shaka-player.compiled.debug.js"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="shaka-player/dist/controls.css"
+    />
+    <!-- IMA HTML5 SDK (for serving Client Side ads): -->
+    <script
+      type="text/javascript"
+      src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"
+    ></script>
+    <!-- IMA DAI SDK (for serving Server Side ads): -->
+    <script
+      type="text/javascript"
+      src="https://imasdk.googleapis.com/js/sdkloader/ima3_dai.js"
+    ></script>
+    <script>
+      var VERSION = "1.0.0";
+      var player;
+      var video;
+
+      var config = {};
+
+      const searchParams = new URLSearchParams(location.search);
+
+      config.srcUrl =
+        searchParams.get("srcUrl") ||
+        "https://api.frs1.ott.kaltura.com/api_v3/service/assetFile/action/playManifest/partnerId/3223/assetId/2762335/assetType/media/assetFileId/22465556/contextType/PLAYBACK/isAltUrl/False/ks/djJ8MzIyM3zVqynGu51UopdyTwkT8TZemrb01uzVdv8wwW-E547mJgo9YQOfG0AwPZCCItv3K0abk5ET2UMaKXYKxQ7T0yNCwN3ceFK31BjiApOFXauYxQ2_aGC2y-ifVolJmJaNTBQLjIGBhlHALvlIynbPV56G4althkOcvo7YGo1pXEDkIRAQy7FYQOajEKq-PUwwL3HKPavI4jH0-UpVx9Q-sSyWhc3su6C-QNyZ7pX0tjzu3UVSLB39guknP29j1CQSSAWlPCo3DqpJPW8x8nFVof7nZw9_BGld62DPasbcWRCB07jq6nuvw47fWxyb3fa6bPKzd_lRhBRMRHMNxIoqjp27LUVwdtEqQN0NMf1D_5-mk4TotYG3MSlWFJORawyxSVD5Z-yvGaCm3u_9WrRg6LZAKyhkPfrDKHMf9pvYZwKOyw==/a.mpd";
+
+      function initApp() {
+        console.log("config: ", config);
+        console.log("shaka player example version: " + VERSION);
+        document.removeEventListener("DOMContentLoaded", initApp);
+
+        shaka.polyfill.installAll(); // Install built-in polyfills to patch browser incompatibilities.
+
+        if (shaka.Player.isBrowserSupported()) {
+          // Check to see if the browser supports the basic APIs Shaka needs.
+          console.log("Shaka Player : Browser is supported!");
+        } else {
+          console.error("Shaka Player : Browser not supported!"); // This browser does not have the minimum set of APIs we need.
+        }
+
+        initPlayer(); // set up player
+      }
+
+      function initPlayer() {
+        video = document.getElementById("video");
+        player = new shaka.Player(video); // Create a Player instance.
+        console.log("shaka player version: " + shaka.Player.version);
+
+        var drmConfig = {
+          drm: {
+            servers: {
+              "com.microsoft.playready":
+                searchParams.get("playreadyLicenseUrl") ||
+                "https://preprod.udrmv3.kaltura.com/cenc/playready/license?custom_data=eyJjYV9zeXN0ZW0iOiJodHRwczovL2FwaS5mcnMxLm90dC5rYWx0dXJhLmNvbS9hcGlfdjMvc2VydmljZS9hc3NldEZpbGUvYWN0aW9uL2dldENvbnRleHQ%2fa3M9ZGpKOE16SXlNM3pWcXluR3U1MVVvcGR5VHdrVDhUWmVtcmIwMXV6VmR2OHd3Vy1FNTQ3bUpnbzlZUU9mRzBBd1BaQ0NJdHYzSzBhYms1RVQyVU1hS1hZS3hRN1QweU5Dd04zY2VGSzMxQmppQXBPRlhhdVl4UTJfYUdDMnktaWZWb2xKbUphTlRCUUxqSUdCaGxIQUx2bEl5bmJQVjU2RzRhbHRoa09jdm83WUdvMXBYRURrSVJBUXk3RllRT2FqRUtxLVBVd3dMM0hLUGF2STRqSDAtVXBWeDlRLXNTeVdoYzNzdTZDLVFOeVo3cFgwdGp6dTNVVlNMQjM5Z3VrblAyOWoxQ1FTU0FXbFBDbzNEcXBKUFc4eDhuRlZvZjduWnc5X0JHbGQ2MkRQYXNiY1dSQ0IwN2pxNm51dnc0N2ZXeHliM2ZhNmJQS3pkX2xSaEJSTVJITU54SW9xanAyN0xVVndkdEVxUU4wTk1mMURfNS1tazRUb3RZRzNNU2xXRkpPUmF3eXhTVkQ1Wi15dkdhQ20zdV85V3JSZzZMWkFLeWhrUGZyREtITWY5cHZZWndLT3l3PT0mY29udGV4dFR5cGU9bm9uZSZpZD0yMjQ2NTU1NiIsImFjY291bnRfaWQiOjQxNzQxMjMsImNvbnRlbnRfaWQiOiIxXzY5NDd1YmU2XzFfbGc3M3pldngsMV82OTQ3dWJlNl8xXzFuaG1hdXM2LDFfNjk0N3ViZTZfMV94dzNmbWo4dywxXzY5NDd1YmU2XzFfanpkNDZycjMsMV82OTQ3dWJlNl8xX2R2NTQ0b2N0LDFfNjk0N3ViZTZfMV9wcjN4ZXE1cyIsImZpbGVzIjoiIiwidXNlcl90b2tlbiI6ImRqSjhNekl5TTN6VnF5bkd1NTFVb3BkeVR3a1Q4VFplbXJiMDF1elZkdjh3d1ctRTU0N21KZ285WVFPZkcwQXdQWkNDSXR2M0swYWJrNUVUMlVNYUtYWUt4UTdUMHlOQ3dOM2NlRkszMUJqaUFwT0ZYYXVZeFEyX2FHQzJ5LWlmVm9sSm1KYU5UQlFMaklHQmhsSEFMdmxJeW5iUFY1Nkc0YWx0aGtPY3ZvN1lHbzFwWEVEa0lSQVF5N0ZZUU9hakVLcS1QVXd3TDNIS1Bhdkk0akgwLVVwVng5US1zU3lXaGMzc3U2Qy1RTnlaN3BYMHRqenUzVVZTTEIzOWd1a25QMjlqMUNRU1NBV2xQQ28zRHFwSlBXOHg4bkZWb2Y3blp3OV9CR2xkNjJEUGFzYmNXUkNCMDdqcTZudXZ3NDdmV3h5YjNmYTZiUEt6ZF9sUmhCUk1SSE1OeElvcWpwMjdMVVZ3ZHRFcVFOME5NZjFEXzUtbWs0VG90WUczTVNsV0ZKT1Jhd3l4U1ZENVoteXZHYUNtM3VfOVdyUmc2TFpBS3loa1BmckRLSE1mOXB2WVp3S095dz09IiwidWRpZCI6Ijc5YjE0MDMzZDY3YjkzNDBlZmZlZjQyZTIyNzQ1MzZjNTMxOGExZjE2YzE5YmIzMTQ0NDQ1Y2EwN2VmYWE3NDciLCJhZGRpdGlvbmFsX2Nhc19zeXN0ZW0iOjMyMjN9&signature=%2bq9ZhX1kWhwB5LKtL96zQqigaOI%3d",
+              "com.widevine.alpha":
+                searchParams.get("widevineLicenseUrl") ||
+                "https://preprod.udrmv3.kaltura.com/cenc/widevine/license?custom_data=eyJjYV9zeXN0ZW0iOiJodHRwczovL2FwaS5mcnMxLm90dC5rYWx0dXJhLmNvbS9hcGlfdjMvc2VydmljZS9hc3NldEZpbGUvYWN0aW9uL2dldENvbnRleHQ%2fa3M9ZGpKOE16SXlNM3pWcXluR3U1MVVvcGR5VHdrVDhUWmVtcmIwMXV6VmR2OHd3Vy1FNTQ3bUpnbzlZUU9mRzBBd1BaQ0NJdHYzSzBhYms1RVQyVU1hS1hZS3hRN1QweU5Dd04zY2VGSzMxQmppQXBPRlhhdVl4UTJfYUdDMnktaWZWb2xKbUphTlRCUUxqSUdCaGxIQUx2bEl5bmJQVjU2RzRhbHRoa09jdm83WUdvMXBYRURrSVJBUXk3RllRT2FqRUtxLVBVd3dMM0hLUGF2STRqSDAtVXBWeDlRLXNTeVdoYzNzdTZDLVFOeVo3cFgwdGp6dTNVVlNMQjM5Z3VrblAyOWoxQ1FTU0FXbFBDbzNEcXBKUFc4eDhuRlZvZjduWnc5X0JHbGQ2MkRQYXNiY1dSQ0IwN2pxNm51dnc0N2ZXeHliM2ZhNmJQS3pkX2xSaEJSTVJITU54SW9xanAyN0xVVndkdEVxUU4wTk1mMURfNS1tazRUb3RZRzNNU2xXRkpPUmF3eXhTVkQ1Wi15dkdhQ20zdV85V3JSZzZMWkFLeWhrUGZyREtITWY5cHZZWndLT3l3PT0mY29udGV4dFR5cGU9bm9uZSZpZD0yMjQ2NTU1NiIsImFjY291bnRfaWQiOjQxNzQxMjMsImNvbnRlbnRfaWQiOiIxXzY5NDd1YmU2XzFfbGc3M3pldngsMV82OTQ3dWJlNl8xXzFuaG1hdXM2LDFfNjk0N3ViZTZfMV94dzNmbWo4dywxXzY5NDd1YmU2XzFfanpkNDZycjMsMV82OTQ3dWJlNl8xX2R2NTQ0b2N0LDFfNjk0N3ViZTZfMV9wcjN4ZXE1cyIsImZpbGVzIjoiIiwidXNlcl90b2tlbiI6ImRqSjhNekl5TTN6VnF5bkd1NTFVb3BkeVR3a1Q4VFplbXJiMDF1elZkdjh3d1ctRTU0N21KZ285WVFPZkcwQXdQWkNDSXR2M0swYWJrNUVUMlVNYUtYWUt4UTdUMHlOQ3dOM2NlRkszMUJqaUFwT0ZYYXVZeFEyX2FHQzJ5LWlmVm9sSm1KYU5UQlFMaklHQmhsSEFMdmxJeW5iUFY1Nkc0YWx0aGtPY3ZvN1lHbzFwWEVEa0lSQVF5N0ZZUU9hakVLcS1QVXd3TDNIS1Bhdkk0akgwLVVwVng5US1zU3lXaGMzc3U2Qy1RTnlaN3BYMHRqenUzVVZTTEIzOWd1a25QMjlqMUNRU1NBV2xQQ28zRHFwSlBXOHg4bkZWb2Y3blp3OV9CR2xkNjJEUGFzYmNXUkNCMDdqcTZudXZ3NDdmV3h5YjNmYTZiUEt6ZF9sUmhCUk1SSE1OeElvcWpwMjdMVVZ3ZHRFcVFOME5NZjFEXzUtbWs0VG90WUczTVNsV0ZKT1Jhd3l4U1ZENVoteXZHYUNtM3VfOVdyUmc2TFpBS3loa1BmckRLSE1mOXB2WVp3S095dz09IiwidWRpZCI6Ijc5YjE0MDMzZDY3YjkzNDBlZmZlZjQyZTIyNzQ1MzZjNTMxOGExZjE2YzE5YmIzMTQ0NDQ1Y2EwN2VmYWE3NDciLCJhZGRpdGlvbmFsX2Nhc19zeXN0ZW0iOjMyMjN9&signature=%2bq9ZhX1kWhwB5LKtL96zQqigaOI%3d",
+            },
+            preferredKeySystems: ["com.microsoft.playready"],
+          },
+        };
+        drmConfig.drm.servers[config.drm] = config.licenseServerUrl;
+        console.log({ drmConfig });
+        player.configure(drmConfig);
+
+        player
+          .getNetworkingEngine()
+          .registerRequestFilter(function (type, request) {
+            if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
+              // Adjust the licence request as required, see Shaka documentation for further info
+              // eg1. to add URL parameters:
+              // request.uris[0] += '?name=value';
+              // eg2. to add in a header:
+              // request.headers['name'] = 'value';
+            }
+          });
+
+        player.configure("streaming.useNativeHlsOnSafari", false);
+
+        player.addEventListener("error", onErrorEvent); // Listen for error events.
+
+        player
+          .load(config.srcUrl)
+          .then(function () {
+            // Try to load a manifest. This is an asynchronous process.
+            // This runs if the asynchronous load is successful.
+            console.log("The manifest has been loaded");
+            video.play();
+          })
+          .catch(onError); // onError is executed if the asynchronous load fails.
+      }
+
+      function onErrorEvent(event) {
+        // Extract the shaka.util.Error object from the event.
+        onError(event.detail);
+      }
+
+      function onError(error) {
+        console.error("Error object", error);
+      }
+
+      function play() {
+        const video = document.getElementById("video");
+        video.play();
+      }
+
+      function pause() {
+        const video = document.getElementById("video");
+        video.pause();
+      }
+
+      let playing = false;
+
+      console.log("adding keydown listener");
+      document.addEventListener("keydown", (e) => {
+        console.log("running keydown listener");
+        if (e.key === "Enter") {
+          if (playing) {
+            pause();
+            playing = false;
+          } else {
+            play();
+            playing = true;
+          }
+        }
+        console.log(e, playing);
+      });
+
+      document.addEventListener("DOMContentLoaded", initApp);
+    </script>
+
+    <style>
+      body {
+        margin: 0;
+      }
+
+      video {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <video autoplay id="video" style="width: 100%; height: 100%"></video>
+  </body>
+</html>
