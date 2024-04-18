@@ -1,0 +1,50 @@
+<html>
+<head>
+  <script src="https://code.jquery.com/jquery-3.1.0.min.js"
+          integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="
+          crossorigin="anonymous"></script>
+
+  <script type="text/javascript">
+
+    calc = function(reg){
+
+        var txt = $("#txtInput").val();
+        var costs = parseInt($("#costsPerPoint").val());
+        
+        var estimates = txt.match(reg);
+        if (!estimates){
+          return 0;
+        }
+        var complexity = 0;
+        for (var i=0; i<estimates.length; i++){
+          complexity += parseInt(estimates[i].substr(1));
+        }
+        return '' + complexity + ' PTS/ ' + (complexity*costs) + ' EUR';
+    }
+
+    $(document).ready(function(){
+      $("#vers").text(Math.floor(Math.random()*100));
+      $("#calcBtn").click(function(){
+        $("#result").html("Result: <br /> ("+ calc(/\([0-9]+\)/g) + 
+          ")<br />[" + calc(/\[[0-9]+\]/g) + 
+          "]<br />{"+ calc(/\{[0-9]+\}/g) + 
+          "}<br /><"+ calc(/\<[0-9]+\>/g) + ">");
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>calculcate storypoints from text <span id="vers"></span></h1>
+
+  <textarea id="txtInput" rows="30" cols="100">
+
+  </textarea>
+  <br />
+  Costs per Point: 
+  <input type="text" id="costsPerPoint" value="500" />
+  <br />
+  <button id="calcBtn">Calculate</button>
+
+  <div id="result"></div>
+</body>
+</html>
