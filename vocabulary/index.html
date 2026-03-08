@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Trainer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { font-size: 1.4rem; margin-bottom: 24px; text-align: center; }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .direction {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .word {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: #4a90d9; }
+        input.correct { border-color: #4caf50; background: #e8f5e9; }
+        input.wrong { border-color: #e53935; background: #ffebee; }
+        .feedback {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            min-height: 1.4em;
+        }
+        .feedback.wrong-feedback {
+            background: #ffebee;
+            color: #c62828;
+            border: 2px solid #e53935;
+        }
+        .feedback.correct-feedback {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+        .feedback:empty {
+            display: none;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+        .stats span { font-weight: 600; }
+        .correct-count { color: #4caf50; }
+        .wrong-count { color: #e53935; }
+        .progress {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .results {
+            text-align: center;
+        }
+        .results h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+        }
+        .percentage {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 16px 0;
+        }
+        .percentage.good { color: #4caf50; }
+        .percentage.ok { color: #ff9800; }
+        .percentage.bad { color: #e53935; }
+        .result-detail {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 24px;
+        }
+        button {
+            padding: 12px 32px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            background: #4a90d9;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover { background: #3a7bc8; }
+    </style>
+</head>
+<body>
+    <h1>Vocabulary Trainer — DE / EN</h1>
+    <div class="card" id="quiz">
+        <div class="direction" id="direction"></div>
+        <div class="word" id="word"></div>
+        <input type="text" id="answer" autocomplete="off" autofocus>
+        <div class="feedback" id="feedback"></div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="correctCount">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="wrongCount">0</span></div>
+        </div>
+        <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="card results" id="results" style="display:none">
+        <h2>Done!</h2>
+        <div class="percentage" id="pct"></div>
+        <div class="result-detail" id="resultDetail"></div>
+        <button id="restart">Start again</button>
+    </div>
+
+    <script>
+        const vocab = [
+            ["now", "jetzt"],
+            ["always", "immer"],
+            ["daily", "täglich"],
+            ["monthly", "monatlich"],
+            ["regularly", "regelmäßig"],
+            ["usually", "normalerweise"],
+            ["frequently", "häufig"],
+            ["often", "oft"],
+            ["sometimes", "manchmal"],
+            ["occasionally", "gelegentlich"],
+            ["seldom", "selten"],
+            ["randomly", "zufällig"],
+            ["rarely", "selten"],
+            ["never", "nie"]
+        ];
+
+        // Build question list: each pair asked in both directions
+        function buildQuestions() {
+            const questions = [];
+            for (const [en, de] of vocab) {
+                questions.push({ prompt: en, answer: de, dir: "EN → DE" });
+                questions.push({ prompt: de, answer: en, dir: "DE → EN" });
+            }
+            // Shuffle
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+            return questions;
+        }
+
+        let questions, idx, correct, wrong, waitingNext;
+
+        const elQuiz = document.getElementById("quiz");
+        const elResults = document.getElementById("results");
+        const elDirection = document.getElementById("direction");
+        const elWord = document.getElementById("word");
+        const elAnswer = document.getElementById("answer");
+        const elFeedback = document.getElementById("feedback");
+        const elCorrectCount = document.getElementById("correctCount");
+        const elWrongCount = document.getElementById("wrongCount");
+        const elProgress = document.getElementById("progress");
+        const elPct = document.getElementById("pct");
+        const elResultDetail = document.getElementById("resultDetail");
+
+        function start() {
+            questions = buildQuestions();
+            idx = 0;
+            correct = 0;
+            wrong = 0;
+            waitingNext = false;
+            elQuiz.style.display = "";
+            elResults.style.display = "none";
+            elCorrectCount.textContent = "0";
+            elWrongCount.textContent = "0";
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = questions[idx];
+            elDirection.textContent = q.dir;
+            elWord.textContent = q.prompt;
+            elAnswer.value = "";
+            elAnswer.className = "";
+            elFeedback.textContent = "";
+            elFeedback.className = "feedback";
+            elProgress.textContent = `${idx + 1} / ${questions.length}`;
+            elAnswer.focus();
+        }
+
+        function normalize(s) {
+            return s.trim().toLowerCase();
+        }
+
+        function checkAnswer() {
+            const q = questions[idx];
+            const userAnswer = normalize(elAnswer.value);
+            const correctAnswer = normalize(q.answer);
+
+            if (userAnswer === correctAnswer) {
+                correct++;
+                elAnswer.className = "correct";
+                elCorrectCount.textContent = correct;
+                elFeedback.textContent = "Correct!";
+                elFeedback.className = "feedback correct-feedback";
+            } else {
+                wrong++;
+                elAnswer.className = "wrong";
+                elWrongCount.textContent = wrong;
+                elFeedback.textContent = `Wrong! The correct answer is: ${q.answer}`;
+                elFeedback.className = "feedback wrong-feedback";
+            }
+
+            waitingNext = true;
+        }
+
+        function nextQuestion() {
+            idx++;
+            if (idx >= questions.length) {
+                showResults();
+            } else {
+                waitingNext = false;
+                showQuestion();
+            }
+        }
+
+        function showResults() {
+            elQuiz.style.display = "none";
+            elResults.style.display = "";
+            const pct = Math.round((correct / questions.length) * 100);
+            elPct.textContent = pct + "%";
+            elPct.className = "percentage " + (pct >= 80 ? "good" : pct >= 50 ? "ok" : "bad");
+            elResultDetail.textContent = `${correct} correct, ${wrong} wrong out of ${questions.length} questions`;
+        }
+
+        elAnswer.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                if (waitingNext) {
+                    nextQuestion();
+                } else if (elAnswer.value.trim()) {
+                    checkAnswer();
+                }
+            }
+        });
+
+        document.getElementById("restart").addEventListener("click", start);
+
+        start();
+    </script>
+</body>
+</html>
