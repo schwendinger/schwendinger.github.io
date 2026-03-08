@@ -14,7 +14,33 @@
             background: #f5f5f5;
             color: #333;
         }
-        h1 { font-size: 1.4rem; margin-bottom: 24px; text-align: center; }
+        h1 { font-size: 1.4rem; margin-bottom: 16px; text-align: center; }
+
+        /* Mode menu */
+        .menu {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .menu button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .menu button:hover { border-color: #4a90d9; color: #4a90d9; }
+        .menu button.active {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: #fff;
+        }
+
         .card {
             background: #fff;
             border-radius: 12px;
@@ -62,9 +88,7 @@
             color: #2e7d32;
             border: 2px solid #4caf50;
         }
-        .feedback:empty {
-            display: none;
-        }
+        .feedback:empty { display: none; }
         .stats {
             display: flex;
             justify-content: center;
@@ -80,13 +104,8 @@
             font-size: 0.85rem;
             color: #888;
         }
-        .results {
-            text-align: center;
-        }
-        .results h2 {
-            font-size: 1.3rem;
-            margin-bottom: 16px;
-        }
+        .results { text-align: center; }
+        .results h2 { font-size: 1.3rem; margin-bottom: 16px; }
         .percentage {
             font-size: 3rem;
             font-weight: 700;
@@ -100,7 +119,7 @@
             color: #666;
             margin-bottom: 24px;
         }
-        button {
+        button.action {
             padding: 12px 32px;
             font-size: 1rem;
             border: none;
@@ -109,28 +128,139 @@
             color: #fff;
             cursor: pointer;
         }
-        button:hover { background: #3a7bc8; }
+        button.action:hover { background: #3a7bc8; }
+
+        /* Flashcard */
+        .flashcard-inner {
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .flashcard-hint {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 16px;
+        }
+        .flashcard-answer {
+            font-size: 1.4rem;
+            color: #4a90d9;
+            font-weight: 600;
+            margin-top: 12px;
+            min-height: 1.6em;
+        }
+        .flashcard-nav {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .flashcard-nav button {
+            padding: 10px 24px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+        }
+        .btn-knew { background: #4caf50; }
+        .btn-knew:hover { background: #43a047; }
+        .btn-didnt { background: #e53935; }
+        .btn-didnt:hover { background: #d32f2f; }
+
+        /* Quiz */
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .choices button {
+            padding: 14px 12px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .choices button:hover:not(:disabled) { border-color: #4a90d9; background: #f0f7ff; }
+        .choices button.choice-correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+        .choices button.choice-wrong {
+            border-color: #e53935;
+            background: #ffebee;
+            color: #c62828;
+        }
     </style>
 </head>
 <body>
     <h1>Vocabulary Trainer — DE / EN</h1>
-    <div class="card" id="quiz">
-        <div class="direction" id="direction"></div>
-        <div class="word" id="word"></div>
-        <input type="text" id="answer" autocomplete="off" autofocus>
-        <div class="feedback" id="feedback"></div>
-        <div class="stats">
-            <div>Correct: <span class="correct-count" id="correctCount">0</span></div>
-            <div>Wrong: <span class="wrong-count" id="wrongCount">0</span></div>
-        </div>
-        <div class="progress" id="progress"></div>
+
+    <div class="menu" id="menu">
+        <button data-mode="type" class="active">Vokabeln eingeben</button>
+        <button data-mode="flashcard">Flashcards</button>
+        <button data-mode="quiz">Quiz</button>
     </div>
 
+    <!-- TYPE MODE -->
+    <div class="card" id="typeMode" style="display:none">
+        <div class="direction" id="typeDir"></div>
+        <div class="word" id="typeWord"></div>
+        <input type="text" id="typeAnswer" autocomplete="off">
+        <div class="feedback" id="typeFeedback"></div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="typeCorrect">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="typeWrong">0</span></div>
+        </div>
+        <div class="progress" id="typeProgress"></div>
+    </div>
+
+    <!-- FLASHCARD MODE -->
+    <div class="card" id="flashcardMode" style="display:none">
+        <div class="direction" id="flashDir"></div>
+        <div class="flashcard-inner" id="flashcardInner">
+            <div class="word" id="flashWord"></div>
+        </div>
+        <button class="action" id="flashShow">Show</button>
+        <div class="flashcard-answer" id="flashAnswer"></div>
+        <div class="flashcard-nav">
+            <button class="btn-didnt" id="flashDidnt">Didn't know</button>
+            <button class="btn-knew" id="flashKnew">Knew it</button>
+        </div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="flashCorrect">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="flashWrong">0</span></div>
+        </div>
+        <div class="progress" id="flashProgress"></div>
+    </div>
+
+    <!-- QUIZ MODE -->
+    <div class="card" id="quizMode" style="display:none">
+        <div class="direction" id="quizDir"></div>
+        <div class="word" id="quizWord"></div>
+        <div class="choices" id="quizChoices"></div>
+        <div class="feedback" id="quizFeedback"></div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="quizCorrect">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="quizWrong">0</span></div>
+        </div>
+        <div class="progress" id="quizProgress"></div>
+    </div>
+
+    <!-- RESULTS (shared) -->
     <div class="card results" id="results" style="display:none">
         <h2>Done!</h2>
         <div class="percentage" id="pct"></div>
         <div class="result-detail" id="resultDetail"></div>
-        <button id="restart">Start again</button>
+        <button class="action" id="restart">Start again</button>
     </div>
 
     <script>
@@ -150,118 +280,207 @@
             ["never", "nie"]
         ];
 
-        // Build question list: each pair asked in both directions
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         function buildQuestions() {
             const questions = [];
             for (const [en, de] of vocab) {
                 questions.push({ prompt: en, answer: de, dir: "EN → DE" });
                 questions.push({ prompt: de, answer: en, dir: "DE → EN" });
             }
-            // Shuffle
-            for (let i = questions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [questions[i], questions[j]] = [questions[j], questions[i]];
-            }
-            return questions;
+            return shuffle(questions);
         }
 
-        let questions, idx, correct, wrong, waitingNext;
+        function normalize(s) { return s.trim().toLowerCase(); }
 
-        const elQuiz = document.getElementById("quiz");
-        const elResults = document.getElementById("results");
-        const elDirection = document.getElementById("direction");
-        const elWord = document.getElementById("word");
-        const elAnswer = document.getElementById("answer");
-        const elFeedback = document.getElementById("feedback");
-        const elCorrectCount = document.getElementById("correctCount");
-        const elWrongCount = document.getElementById("wrongCount");
-        const elProgress = document.getElementById("progress");
-        const elPct = document.getElementById("pct");
-        const elResultDetail = document.getElementById("resultDetail");
-
-        function start() {
-            questions = buildQuestions();
-            idx = 0;
-            correct = 0;
-            wrong = 0;
-            waitingNext = false;
-            elQuiz.style.display = "";
-            elResults.style.display = "none";
-            elCorrectCount.textContent = "0";
-            elWrongCount.textContent = "0";
-            showQuestion();
+        function showResults(correct, wrong, total) {
+            document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
+            const el = document.getElementById('results');
+            el.style.display = '';
+            const pct = Math.round((correct / total) * 100);
+            document.getElementById('pct').textContent = pct + '%';
+            document.getElementById('pct').className = 'percentage ' + (pct >= 80 ? 'good' : pct >= 50 ? 'ok' : 'bad');
+            document.getElementById('resultDetail').textContent = `${correct} correct, ${wrong} wrong out of ${total} questions`;
         }
 
-        function showQuestion() {
-            const q = questions[idx];
-            elDirection.textContent = q.dir;
-            elWord.textContent = q.prompt;
-            elAnswer.value = "";
-            elAnswer.className = "";
-            elFeedback.textContent = "";
-            elFeedback.className = "feedback";
-            elProgress.textContent = `${idx + 1} / ${questions.length}`;
-            elAnswer.focus();
+        // ---- MODE: Vokabeln eingeben ----
+        let typeState = {};
+        function typeStart() {
+            typeState = { questions: buildQuestions(), idx: 0, correct: 0, wrong: 0, waiting: false };
+            document.getElementById('typeCorrect').textContent = '0';
+            document.getElementById('typeWrong').textContent = '0';
+            typeShow();
         }
-
-        function normalize(s) {
-            return s.trim().toLowerCase();
+        function typeShow() {
+            const q = typeState.questions[typeState.idx];
+            document.getElementById('typeDir').textContent = q.dir;
+            document.getElementById('typeWord').textContent = q.prompt;
+            const inp = document.getElementById('typeAnswer');
+            inp.value = ''; inp.className = '';
+            document.getElementById('typeFeedback').textContent = '';
+            document.getElementById('typeFeedback').className = 'feedback';
+            document.getElementById('typeProgress').textContent = `${typeState.idx + 1} / ${typeState.questions.length}`;
+            inp.focus();
         }
-
-        function checkAnswer() {
-            const q = questions[idx];
-            const userAnswer = normalize(elAnswer.value);
-            const correctAnswer = normalize(q.answer);
-
-            if (userAnswer === correctAnswer) {
-                correct++;
-                elAnswer.className = "correct";
-                elCorrectCount.textContent = correct;
-                elFeedback.textContent = "Correct!";
-                elFeedback.className = "feedback correct-feedback";
-            } else {
-                wrong++;
-                elAnswer.className = "wrong";
-                elWrongCount.textContent = wrong;
-                elFeedback.textContent = `Wrong! The correct answer is: ${q.answer}`;
-                elFeedback.className = "feedback wrong-feedback";
-            }
-
-            waitingNext = true;
-        }
-
-        function nextQuestion() {
-            idx++;
-            if (idx >= questions.length) {
-                showResults();
-            } else {
-                waitingNext = false;
-                showQuestion();
-            }
-        }
-
-        function showResults() {
-            elQuiz.style.display = "none";
-            elResults.style.display = "";
-            const pct = Math.round((correct / questions.length) * 100);
-            elPct.textContent = pct + "%";
-            elPct.className = "percentage " + (pct >= 80 ? "good" : pct >= 50 ? "ok" : "bad");
-            elResultDetail.textContent = `${correct} correct, ${wrong} wrong out of ${questions.length} questions`;
-        }
-
-        elAnswer.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                if (waitingNext) {
-                    nextQuestion();
-                } else if (elAnswer.value.trim()) {
-                    checkAnswer();
+        document.getElementById('typeAnswer').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const inp = document.getElementById('typeAnswer');
+            if (typeState.waiting) {
+                typeState.idx++;
+                if (typeState.idx >= typeState.questions.length) {
+                    showResults(typeState.correct, typeState.wrong, typeState.questions.length);
+                } else {
+                    typeState.waiting = false;
+                    typeShow();
                 }
+            } else if (inp.value.trim()) {
+                const q = typeState.questions[typeState.idx];
+                const fb = document.getElementById('typeFeedback');
+                if (normalize(inp.value) === normalize(q.answer)) {
+                    typeState.correct++;
+                    inp.className = 'correct';
+                    document.getElementById('typeCorrect').textContent = typeState.correct;
+                    fb.textContent = 'Correct!';
+                    fb.className = 'feedback correct-feedback';
+                } else {
+                    typeState.wrong++;
+                    inp.className = 'wrong';
+                    document.getElementById('typeWrong').textContent = typeState.wrong;
+                    fb.textContent = `Wrong! The correct answer is: ${q.answer}`;
+                    fb.className = 'feedback wrong-feedback';
+                }
+                typeState.waiting = true;
             }
         });
 
-        document.getElementById("restart").addEventListener("click", start);
+        // ---- MODE: Flashcards ----
+        let flashState = {};
+        function flashStart() {
+            flashState = { questions: buildQuestions(), idx: 0, correct: 0, wrong: 0, revealed: false };
+            document.getElementById('flashCorrect').textContent = '0';
+            document.getElementById('flashWrong').textContent = '0';
+            flashShow();
+        }
+        function flashShow() {
+            const q = flashState.questions[flashState.idx];
+            document.getElementById('flashDir').textContent = q.dir;
+            document.getElementById('flashWord').textContent = q.prompt;
+            document.getElementById('flashAnswer').textContent = '';
+            document.getElementById('flashShow').style.display = '';
+            document.getElementById('flashProgress').textContent = `${flashState.idx + 1} / ${flashState.questions.length}`;
+            flashState.revealed = false;
+        }
+        document.getElementById('flashShow').addEventListener('click', () => {
+            if (!flashState.revealed) {
+                const q = flashState.questions[flashState.idx];
+                document.getElementById('flashAnswer').textContent = q.answer;
+                document.getElementById('flashShow').style.display = 'none';
+                flashState.revealed = true;
+            }
+        });
+        function flashNext(knew) {
+            if (!flashState.revealed) return;
+            if (knew) { flashState.correct++; }
+            else { flashState.wrong++; }
+            document.getElementById('flashCorrect').textContent = flashState.correct;
+            document.getElementById('flashWrong').textContent = flashState.wrong;
+            flashState.idx++;
+            if (flashState.idx >= flashState.questions.length) {
+                showResults(flashState.correct, flashState.wrong, flashState.questions.length);
+            } else {
+                flashShow();
+            }
+        }
+        document.getElementById('flashKnew').addEventListener('click', () => flashNext(true));
+        document.getElementById('flashDidnt').addEventListener('click', () => flashNext(false));
 
-        start();
+        // ---- MODE: Quiz (multiple choice) ----
+        let quizState = {};
+        function quizStart() {
+            quizState = { questions: buildQuestions(), idx: 0, correct: 0, wrong: 0, answered: false };
+            document.getElementById('quizCorrect').textContent = '0';
+            document.getElementById('quizWrong').textContent = '0';
+            quizShow();
+        }
+        function quizShow() {
+            const q = quizState.questions[quizState.idx];
+            document.getElementById('quizDir').textContent = q.dir;
+            document.getElementById('quizWord').textContent = q.prompt;
+            document.getElementById('quizFeedback').textContent = '';
+            document.getElementById('quizFeedback').className = 'feedback';
+            document.getElementById('quizProgress').textContent = `${quizState.idx + 1} / ${quizState.questions.length}`;
+            quizState.answered = false;
+
+            // Build 4 choices: correct + 3 random wrong
+            const isEnToDe = q.dir === "EN → DE";
+            const allAnswers = vocab.map(v => isEnToDe ? v[1] : v[0]);
+            const wrongAnswers = shuffle(allAnswers.filter(a => normalize(a) !== normalize(q.answer))).slice(0, 3);
+            const choices = shuffle([q.answer, ...wrongAnswers]);
+
+            const container = document.getElementById('quizChoices');
+            container.innerHTML = '';
+            for (const choice of choices) {
+                const btn = document.createElement('button');
+                btn.textContent = choice;
+                btn.addEventListener('click', () => quizAnswer(btn, choice, q.answer));
+                container.appendChild(btn);
+            }
+        }
+        function quizAnswer(btn, chosen, correctAnswer) {
+            if (quizState.answered) return;
+            quizState.answered = true;
+            const buttons = document.querySelectorAll('#quizChoices button');
+            buttons.forEach(b => {
+                b.disabled = true;
+                if (normalize(b.textContent) === normalize(correctAnswer)) {
+                    b.classList.add('choice-correct');
+                }
+            });
+            if (normalize(chosen) === normalize(correctAnswer)) {
+                quizState.correct++;
+                document.getElementById('quizCorrect').textContent = quizState.correct;
+            } else {
+                quizState.wrong++;
+                document.getElementById('quizWrong').textContent = quizState.wrong;
+                btn.classList.add('choice-wrong');
+            }
+            setTimeout(() => {
+                quizState.idx++;
+                if (quizState.idx >= quizState.questions.length) {
+                    showResults(quizState.correct, quizState.wrong, quizState.questions.length);
+                } else {
+                    quizShow();
+                }
+            }, 1000);
+        }
+
+        // ---- Mode switching ----
+        let currentMode = 'type';
+        const modes = { type: 'typeMode', flashcard: 'flashcardMode', quiz: 'quizMode' };
+        const starters = { type: typeStart, flashcard: flashStart, quiz: quizStart };
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.menu button[data-mode="${mode}"]`).classList.add('active');
+            document.getElementById(modes[mode]).style.display = '';
+            starters[mode]();
+        }
+
+        document.querySelectorAll('.menu button').forEach(btn => {
+            btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+        });
+
+        document.getElementById('restart').addEventListener('click', () => switchMode(currentMode));
+
+        switchMode('type');
     </script>
 </body>
 </html>
