@@ -41,6 +41,23 @@
             color: #fff;
         }
 
+        /* Set picker */
+        .set-picker {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .set-picker select {
+            padding: 8px 16px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            color: #333;
+            outline: none;
+            cursor: pointer;
+        }
+        .set-picker select:focus { border-color: #4a90d9; }
+
         .card {
             background: #fff;
             border-radius: 12px;
@@ -204,6 +221,8 @@
 <body>
     <h1>Lians Vokabeltrainer</h1>
 
+    <div class="set-picker" id="setPicker"></div>
+
     <div class="menu" id="menu">
         <button data-mode="type" class="active">Vokabeln eingeben</button>
         <button data-mode="flashcard">Flashcards</button>
@@ -264,21 +283,61 @@
     </div>
 
     <script>
-        const vocab = [
-            ["now", "jetzt"],
-            ["always", "immer"],
-            ["daily", "täglich"],
-            ["monthly", "monatlich"],
-            ["regularly", "regelmäßig"],
-            ["usually", "normalerweise"],
-            ["frequently", "häufig"],
-            ["often", "oft"],
-            ["sometimes", "manchmal"],
-            ["occasionally", "gelegentlich"],
-            ["randomly", "zufällig"],
-            ["rarely", "selten"],
-            ["never", "nie"]
+        const sets = [
+            {
+                name: "2026-03 Vokabeln",
+                words: [
+                    ["now", "jetzt"],
+                    ["always", "immer"],
+                    ["daily", "täglich"],
+                    ["monthly", "monatlich"],
+                    ["regularly", "regelmäßig"],
+                    ["usually", "normalerweise"],
+                    ["frequently", "häufig"],
+                    ["often", "oft"],
+                    ["sometimes", "manchmal"],
+                    ["occasionally", "gelegentlich"],
+                    ["randomly", "zufällig"],
+                    ["rarely", "selten"],
+                    ["never", "nie"]
+                ]
+            },
+            {
+                name: "2026-03 Vokabeln Set 2",
+                words: [
+                    ["very", "sehr"],
+                    ["too", "zu"],
+                    ["almost", "fast"],
+                    ["extremely", "äußerst"],
+                    ["barely", "kaum"],
+                    ["completely", "vollständig"],
+                    ["enough", "genug"],
+                    ["fairly", "ziemlich"],
+                    ["quite", "ziemlich / ganz"],
+                    ["rather", "ziemlich / eher"],
+                    ["scarcely", "kaum"],
+                    ["totally", "völlig"]
+                ]
+            }
         ];
+
+        let currentSetIdx = 0;
+        function getVocab() { return sets[currentSetIdx].words; }
+
+        // Build set picker
+        const setPicker = document.getElementById('setPicker');
+        const setSelect = document.createElement('select');
+        sets.forEach((s, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = s.name;
+            setSelect.appendChild(opt);
+        });
+        setSelect.addEventListener('change', () => {
+            currentSetIdx = parseInt(setSelect.value);
+            switchMode(currentMode);
+        });
+        setPicker.appendChild(setSelect);
 
         function shuffle(arr) {
             for (let i = arr.length - 1; i > 0; i--) {
@@ -290,7 +349,7 @@
 
         function buildQuestions() {
             const questions = [];
-            for (const [en, de] of vocab) {
+            for (const [en, de] of getVocab()) {
                 questions.push({ prompt: en, answer: de, dir: "EN → DE" });
                 questions.push({ prompt: de, answer: en, dir: "DE → EN" });
             }
@@ -419,7 +478,7 @@
 
             // Build 4 choices: correct + 3 random wrong
             const isEnToDe = q.dir === "EN → DE";
-            const allAnswers = vocab.map(v => isEnToDe ? v[1] : v[0]);
+            const allAnswers = getVocab().map(v => isEnToDe ? v[1] : v[0]);
             const wrongAnswers = shuffle(allAnswers.filter(a => normalize(a) !== normalize(q.answer))).slice(0, 3);
             const choices = shuffle([q.answer, ...wrongAnswers]);
 
