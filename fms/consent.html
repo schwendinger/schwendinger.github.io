@@ -1,0 +1,81 @@
+<html>
+    <body>
+        <style type="text/css">
+            #cookieBar {
+                background-color: #5a5a5a;
+                border: none;
+                color: #fff;
+                position: fixed;
+                left:0;
+                right: 0;
+                margin: 0;
+                bottom: 0;
+                
+                width: 100%;
+                z-index: 999;
+                display: block; 
+                padding: 10px 15px; 
+                box-sizing: border-box; 
+                font-family: Roboto,Arial,Helvetica,sans-serif;
+                font-size: 1em;
+                font-style: normal;
+                font-weight: 300;
+                line-height: 1.444;
+                word-wrap: break-word;                
+            }
+            #cookieBar.consentGiven {
+                display: none;
+            }
+            #cookieBarText{
+                margin-right: 5px;
+                font-family: arial,sans-serif;
+                box-sizing: border-box;
+                font-size: 13px;
+                line-height: 1.8;
+                font-weight: 600;
+            }
+            #cookieBarButtons{
+                box-sizing: border-box;
+                font-family: arial, sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                line-height: 1.8;
+                color: #fff;   
+            }
+            #cookieBarButton{
+                background-color: #303030;
+                border: 1px solid;
+                color: #fff;
+                cursor: pointer;
+                line-height: 19px;#
+                margin-left: 5px;
+                padding: 4px 8px;
+                text-decoration: none;
+                white-space: nowrap;
+        
+            }
+        </style>
+        <div id="cookieBar" class="consentGiven">
+        <span id="cookieBarText">
+            Diese Seite benutzt Cookies um die Qualität der Seite zu verbessern und Besuche zu analysieren.
+        </span>
+        <span id="cookieBarButtons">
+            <a id="cookieBarButton" href="#" role="button">Ok</a>
+        </span>
+        </div>
+        <script type="text/javascript">
+        if (localStorage.getItem("consent") === null){
+            var cookieBar = document.getElementById("cookieBar");
+            cookieBar.removeAttribute("class");
+            var btn = document.getElementById("cookieBarButton");
+            btn.onclick = function(){
+                cookieBar.setAttribute("class", "consentGiven");
+                localStorage.setItem("consent", true)
+           };
+        }
+        </script>
+        
+
+
+    </body>
+</html>

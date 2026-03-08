@@ -16,3 +16,4 @@ Push to `master` → auto-deploys via GitHub Pages. Pages are accessible at `htt
 - Projects are self-contained — no shared framework or dependencies between them
 - Static HTML/CSS/JS only (no build step)
 - **This is a public repository — NEVER commit secrets, API keys, tokens, or credentials**
+- Do NOT modify `index.html` — it is not meant to link to the mini projects

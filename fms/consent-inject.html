@@ -1,0 +1,14 @@
+<html>
+    <body>
+
+        if (localStorage.getItem("fms_consent") === null){
+            var fms_cookiebar_str ='<div id="fms_cookieBar" style="background-color: #5a5a5a; border: none; color: #fff; position: fixed; left:0; right: 0; margin: 0; bottom: 0; width: 100%; z-index: 999; display: block;  padding: 10px 15px;  box-sizing: border-box;  font-family: Roboto,Arial,Helvetica,sans-serif; font-size: 1em; font-style: normal; font-weight: 300; line-height: 1.444; word-wrap: break-word;"><span id="fms_cookieBarText" style="margin-right: 5px; font-family: arial,sans-serif; box-sizing: border-box; font-size: 13px; line-height: 1.8; font-weight: 600;">Diese Seite benutzt Cookies um die Qualität der Seite zu verbessern und Besuche zu analysieren.</span><span id="fms_cookieBarButtons" style="box-sizing: border-box; font-family: arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.8; color: #fff;"><a id="fms_cookieBarButton" href="#" role="button" style="background-color: #303030; border: 1px solid; color: #fff; cursor: pointer; line-height: 19px;# margin-left: 5px; padding: 4px 8px; text-decoration: none; white-space: nowrap;">Ok</a></span></div>';
+            $("body").append(fms_cookiebar_str);
+            $("#fms_cookieBarButton").on("click", function(){
+                localStorage.setItem("fms_consent", true)
+                $("#fms_cookieBar").remove()
+           });
+        }
+
+    </body>
+</html>
