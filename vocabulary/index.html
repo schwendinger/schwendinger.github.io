@@ -321,12 +321,19 @@
             }
         ];
 
-        let currentSetIdx = 0;
-        function getVocab() { return sets[currentSetIdx].words; }
+        let currentSetIdx = 'all';
+        function getVocab() {
+            if (currentSetIdx === 'all') return sets.flatMap(s => s.words);
+            return sets[currentSetIdx].words;
+        }
 
         // Build set picker
         const setPicker = document.getElementById('setPicker');
         const setSelect = document.createElement('select');
+        const allOpt = document.createElement('option');
+        allOpt.value = 'all';
+        allOpt.textContent = 'Alles lernen';
+        setSelect.appendChild(allOpt);
         sets.forEach((s, i) => {
             const opt = document.createElement('option');
             opt.value = i;
@@ -334,7 +341,7 @@
             setSelect.appendChild(opt);
         });
         setSelect.addEventListener('change', () => {
-            currentSetIdx = parseInt(setSelect.value);
+            currentSetIdx = setSelect.value === 'all' ? 'all' : parseInt(setSelect.value);
             switchMode(currentMode);
         });
         setPicker.appendChild(setSelect);
