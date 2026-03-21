@@ -17,3 +17,14 @@ Push to `master` → auto-deploys via GitHub Pages. Pages are accessible at `htt
 - Static HTML/CSS/JS only (no build step)
 - **This is a public repository — NEVER commit secrets, API keys, tokens, or credentials**
 - Do NOT modify `index.html` — it is not meant to link to the mini projects
+
+## Workflows
+
+### "work done"
+
+When the user says "work done", execute this full sequence:
+1. Commit all changes on the current branch
+2. Push the branch to remote
+3. Squash merge into master (`git merge --squash`)
+4. Push master
+5. Delete the working branch (local + remote)
