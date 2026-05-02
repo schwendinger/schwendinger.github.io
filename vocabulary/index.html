@@ -216,6 +216,32 @@
             background: #ffebee;
             color: #c62828;
         }
+
+        /* Irregular verbs */
+        .verb-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+            text-align: left;
+        }
+        .verb-input { display: flex; flex-direction: column; gap: 4px; }
+        .verb-input label {
+            font-size: 0.8rem;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .verb-input .given {
+            padding: 12px 16px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f0f7ff;
+            color: #4a90d9;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -227,6 +253,8 @@
         <button data-mode="type" class="active">Vokabeln eingeben</button>
         <button data-mode="flashcard">Flashcards</button>
         <button data-mode="quiz">Quiz</button>
+        <button data-mode="irregAll">Verben: Alle 3</button>
+        <button data-mode="irregGap">Verben: Lücke</button>
     </div>
 
     <!-- TYPE MODE -->
@@ -272,6 +300,32 @@
             <div>Wrong: <span class="wrong-count" id="quizWrong">0</span></div>
         </div>
         <div class="progress" id="quizProgress"></div>
+    </div>
+
+    <!-- IRREGULAR VERBS: ALL 3 -->
+    <div class="card" id="irregAllMode" style="display:none">
+        <div class="direction">Deutsch → Infinitiv / Past Simple / Past Participle</div>
+        <div class="word" id="irregAllWord"></div>
+        <div class="verb-inputs" id="irregAllInputs"></div>
+        <div class="feedback" id="irregAllFeedback"></div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="irregAllCorrect">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="irregAllWrong">0</span></div>
+        </div>
+        <div class="progress" id="irregAllProgress"></div>
+    </div>
+
+    <!-- IRREGULAR VERBS: GAP FILL -->
+    <div class="card" id="irregGapMode" style="display:none">
+        <div class="direction">Eine Form ist gegeben — fülle die fehlenden aus</div>
+        <div class="word" id="irregGapWord"></div>
+        <div class="verb-inputs" id="irregGapInputs"></div>
+        <div class="feedback" id="irregGapFeedback"></div>
+        <div class="stats">
+            <div>Correct: <span class="correct-count" id="irregGapCorrect">0</span></div>
+            <div>Wrong: <span class="wrong-count" id="irregGapWrong">0</span></div>
+        </div>
+        <div class="progress" id="irregGapProgress"></div>
     </div>
 
     <!-- RESULTS (shared) -->
@@ -341,6 +395,20 @@
                 ]
             }
         ];
+
+        const irregularVerbs = [
+            { de: "klingeln/läuten", forms: ["ring", "rang", "rung"] },
+            { de: "suchen", forms: ["seek", "sought", "sought"] },
+            { de: "verkaufen", forms: ["sell", "sold", "sold"] },
+            { de: "senden/schicken", forms: ["send", "sent", "sent"] },
+            { de: "schütteln", forms: ["shake", "shook", "shaken"] },
+            { de: "scheinen", forms: ["shine", "shone", "shone"] },
+            { de: "schießen", forms: ["shoot", "shot", "shot"] },
+            { de: "zeigen", forms: ["show", "showed", "shown/showed"] },
+            { de: "schließen", forms: ["shut", "shut", "shut"] },
+            { de: "sinken", forms: ["sink", "sank", "sunk"] }
+        ];
+        const formLabels = ["Infinitiv", "Past Simple", "Past Participle"];
 
         let currentSetIdx = 'all';
         function getVocab() {
@@ -547,10 +615,138 @@
             }, 1000);
         }
 
+        // ---- MODE: Irregular verbs (shared logic) ----
+        function buildVerbQuestions(gapMode) {
+            const qs = irregularVerbs.map(v => {
+                const q = { de: v.de, forms: v.forms };
+                if (gapMode) q.given = Math.floor(Math.random() * 3);
+                return q;
+            });
+            return shuffle(qs);
+        }
+        function checkForm(input, expected) {
+            const accepted = expected.split('/').map(normalize);
+            return accepted.includes(normalize(input));
+        }
+        function makeVerbCard(state, opts) {
+            // opts: { containerId, wordId, feedbackId, progressId, correctId, wrongId, gapMode }
+            state.idx = 0; state.correct = 0; state.wrong = 0; state.waiting = false;
+            state.questions = buildVerbQuestions(opts.gapMode);
+            document.getElementById(opts.correctId).textContent = '0';
+            document.getElementById(opts.wrongId).textContent = '0';
+            renderVerbQuestion(state, opts);
+        }
+        function renderVerbQuestion(state, opts) {
+            const q = state.questions[state.idx];
+            document.getElementById(opts.wordId).textContent = q.de;
+            const fb = document.getElementById(opts.feedbackId);
+            fb.textContent = ''; fb.className = 'feedback';
+            document.getElementById(opts.progressId).textContent = `${state.idx + 1} / ${state.questions.length}`;
+
+            const container = document.getElementById(opts.containerId);
+            container.innerHTML = '';
+            const inputs = [];
+            for (let i = 0; i < 3; i++) {
+                const row = document.createElement('div');
+                row.className = 'verb-input';
+                const lbl = document.createElement('label');
+                lbl.textContent = formLabels[i];
+                row.appendChild(lbl);
+                if (opts.gapMode && i === q.given) {
+                    const div = document.createElement('div');
+                    div.className = 'given';
+                    div.textContent = q.forms[i].split('/')[0];
+                    row.appendChild(div);
+                    inputs.push(null);
+                } else {
+                    const inp = document.createElement('input');
+                    inp.type = 'text'; inp.autocomplete = 'off';
+                    inp.addEventListener('keydown', (e) => {
+                        if (e.key !== 'Enter') return;
+                        if (state.waiting) {
+                            advanceVerb(state, opts);
+                        } else {
+                            // move focus to next empty input, or submit if last
+                            const nextIdx = inputs.findIndex((x, j) => j > i && x);
+                            if (nextIdx === -1) submitVerb(state, opts, inputs);
+                            else inputs[nextIdx].focus();
+                        }
+                    });
+                    row.appendChild(inp);
+                    inputs.push(inp);
+                }
+                container.appendChild(row);
+            }
+            state.inputs = inputs;
+            const first = inputs.find(x => x);
+            if (first) first.focus();
+        }
+        function submitVerb(state, opts, inputs) {
+            const q = state.questions[state.idx];
+            let allOk = true;
+            const wrongList = [];
+            for (let i = 0; i < 3; i++) {
+                const inp = inputs[i];
+                if (!inp) continue;
+                const ok = checkForm(inp.value, q.forms[i]);
+                inp.className = ok ? 'correct' : 'wrong';
+                inp.disabled = true;
+                if (!ok) { allOk = false; wrongList.push(`${formLabels[i]}: ${q.forms[i]}`); }
+            }
+            const fb = document.getElementById(opts.feedbackId);
+            if (allOk) {
+                state.correct++;
+                document.getElementById(opts.correctId).textContent = state.correct;
+                fb.textContent = 'Correct!';
+                fb.className = 'feedback correct-feedback';
+            } else {
+                state.wrong++;
+                document.getElementById(opts.wrongId).textContent = state.wrong;
+                fb.textContent = 'Wrong! ' + wrongList.join(' · ');
+                fb.className = 'feedback wrong-feedback';
+            }
+            state.waiting = true;
+            // refocus an enabled-or-disabled input so Enter still works
+            const last = inputs.filter(x => x).pop();
+            if (last) last.focus();
+        }
+        function advanceVerb(state, opts) {
+            state.idx++;
+            state.waiting = false;
+            if (state.idx >= state.questions.length) {
+                showResults(state.correct, state.wrong, state.questions.length);
+            } else {
+                renderVerbQuestion(state, opts);
+            }
+        }
+
+        let irregAllState = {};
+        const irregAllOpts = {
+            containerId: 'irregAllInputs', wordId: 'irregAllWord',
+            feedbackId: 'irregAllFeedback', progressId: 'irregAllProgress',
+            correctId: 'irregAllCorrect', wrongId: 'irregAllWrong', gapMode: false
+        };
+        function irregAllStart() { makeVerbCard(irregAllState, irregAllOpts); }
+
+        let irregGapState = {};
+        const irregGapOpts = {
+            containerId: 'irregGapInputs', wordId: 'irregGapWord',
+            feedbackId: 'irregGapFeedback', progressId: 'irregGapProgress',
+            correctId: 'irregGapCorrect', wrongId: 'irregGapWrong', gapMode: true
+        };
+        function irregGapStart() { makeVerbCard(irregGapState, irregGapOpts); }
+
         // ---- Mode switching ----
         let currentMode = 'type';
-        const modes = { type: 'typeMode', flashcard: 'flashcardMode', quiz: 'quizMode' };
-        const starters = { type: typeStart, flashcard: flashStart, quiz: quizStart };
+        const modes = {
+            type: 'typeMode', flashcard: 'flashcardMode', quiz: 'quizMode',
+            irregAll: 'irregAllMode', irregGap: 'irregGapMode'
+        };
+        const starters = {
+            type: typeStart, flashcard: flashStart, quiz: quizStart,
+            irregAll: irregAllStart, irregGap: irregGapStart
+        };
+        const usesVocabSet = { type: true, flashcard: true, quiz: true, irregAll: false, irregGap: false };
 
         function switchMode(mode) {
             currentMode = mode;
@@ -558,6 +754,7 @@
             document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
             document.querySelector(`.menu button[data-mode="${mode}"]`).classList.add('active');
             document.getElementById(modes[mode]).style.display = '';
+            document.getElementById('setPicker').style.display = usesVocabSet[mode] ? '' : 'none';
             starters[mode]();
         }
 
