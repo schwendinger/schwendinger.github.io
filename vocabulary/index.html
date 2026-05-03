@@ -242,6 +242,12 @@
             color: #4a90d9;
             font-weight: 600;
         }
+
+        .btn-next {
+            margin-top: 16px;
+            background: #888;
+        }
+        .btn-next:hover { background: #666; }
     </style>
 </head>
 <body>
@@ -263,6 +269,7 @@
         <div class="word" id="typeWord"></div>
         <input type="text" id="typeAnswer" autocomplete="off">
         <div class="feedback" id="typeFeedback"></div>
+        <button class="action btn-next" id="typeNext">Next</button>
         <div class="stats">
             <div>Correct: <span class="correct-count" id="typeCorrect">0</span></div>
             <div>Wrong: <span class="wrong-count" id="typeWrong">0</span></div>
@@ -295,6 +302,7 @@
         <div class="word" id="quizWord"></div>
         <div class="choices" id="quizChoices"></div>
         <div class="feedback" id="quizFeedback"></div>
+        <button class="action btn-next" id="quizNext">Next</button>
         <div class="stats">
             <div>Correct: <span class="correct-count" id="quizCorrect">0</span></div>
             <div>Wrong: <span class="wrong-count" id="quizWrong">0</span></div>
@@ -308,6 +316,7 @@
         <div class="word" id="irregAllWord"></div>
         <div class="verb-inputs" id="irregAllInputs"></div>
         <div class="feedback" id="irregAllFeedback"></div>
+        <button class="action btn-next" id="irregAllNext">Next</button>
         <div class="stats">
             <div>Correct: <span class="correct-count" id="irregAllCorrect">0</span></div>
             <div>Wrong: <span class="wrong-count" id="irregAllWrong">0</span></div>
@@ -321,6 +330,7 @@
         <div class="word" id="irregGapWord"></div>
         <div class="verb-inputs" id="irregGapInputs"></div>
         <div class="feedback" id="irregGapFeedback"></div>
+        <button class="action btn-next" id="irregGapNext">Next</button>
         <div class="stats">
             <div>Correct: <span class="correct-count" id="irregGapCorrect">0</span></div>
             <div>Wrong: <span class="wrong-count" id="irregGapWrong">0</span></div>
@@ -483,17 +493,27 @@
             document.getElementById('typeProgress').textContent = `${typeState.idx + 1} / ${typeState.questions.length}`;
             inp.focus();
         }
+        function typeAdvance() {
+            typeState.idx++;
+            if (typeState.idx >= typeState.questions.length) {
+                showResults(typeState.correct, typeState.wrong, typeState.questions.length);
+            } else {
+                typeState.waiting = false;
+                typeShow();
+            }
+        }
+        function typeNext() {
+            if (!typeState.waiting) {
+                typeState.wrong++;
+                document.getElementById('typeWrong').textContent = typeState.wrong;
+            }
+            typeAdvance();
+        }
         document.getElementById('typeAnswer').addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
             const inp = document.getElementById('typeAnswer');
             if (typeState.waiting) {
-                typeState.idx++;
-                if (typeState.idx >= typeState.questions.length) {
-                    showResults(typeState.correct, typeState.wrong, typeState.questions.length);
-                } else {
-                    typeState.waiting = false;
-                    typeShow();
-                }
+                typeAdvance();
             } else if (inp.value.trim()) {
                 const q = typeState.questions[typeState.idx];
                 const fb = document.getElementById('typeFeedback');
@@ -513,6 +533,7 @@
                 typeState.waiting = true;
             }
         });
+        document.getElementById('typeNext').addEventListener('click', typeNext);
 
         // ---- MODE: Flashcards ----
         let flashState = {};
@@ -587,6 +608,29 @@
                 container.appendChild(btn);
             }
         }
+        function quizAdvance() {
+            quizState.idx++;
+            if (quizState.idx >= quizState.questions.length) {
+                showResults(quizState.correct, quizState.wrong, quizState.questions.length);
+            } else {
+                quizShow();
+            }
+        }
+        function quizNext() {
+            if (!quizState.answered) {
+                const q = quizState.questions[quizState.idx];
+                quizState.wrong++;
+                document.getElementById('quizWrong').textContent = quizState.wrong;
+                document.querySelectorAll('#quizChoices button').forEach(b => {
+                    b.disabled = true;
+                    if (normalize(b.textContent) === normalize(q.answer)) {
+                        b.classList.add('choice-correct');
+                    }
+                });
+                quizState.answered = true;
+            }
+            quizAdvance();
+        }
         function quizAnswer(btn, chosen, correctAnswer) {
             if (quizState.answered) return;
             quizState.answered = true;
@@ -605,15 +649,8 @@
                 document.getElementById('quizWrong').textContent = quizState.wrong;
                 btn.classList.add('choice-wrong');
             }
-            setTimeout(() => {
-                quizState.idx++;
-                if (quizState.idx >= quizState.questions.length) {
-                    showResults(quizState.correct, quizState.wrong, quizState.questions.length);
-                } else {
-                    quizShow();
-                }
-            }, 1000);
         }
+        document.getElementById('quizNext').addEventListener('click', quizNext);
 
         // ---- MODE: Irregular verbs (shared logic) ----
         function buildVerbQuestions(gapMode) {
@@ -719,6 +756,13 @@
                 renderVerbQuestion(state, opts);
             }
         }
+        function nextVerb(state, opts) {
+            if (!state.waiting) {
+                state.wrong++;
+                document.getElementById(opts.wrongId).textContent = state.wrong;
+            }
+            advanceVerb(state, opts);
+        }
 
         let irregAllState = {};
         const irregAllOpts = {
@@ -727,6 +771,7 @@
             correctId: 'irregAllCorrect', wrongId: 'irregAllWrong', gapMode: false
         };
         function irregAllStart() { makeVerbCard(irregAllState, irregAllOpts); }
+        document.getElementById('irregAllNext').addEventListener('click', () => nextVerb(irregAllState, irregAllOpts));
 
         let irregGapState = {};
         const irregGapOpts = {
@@ -735,6 +780,7 @@
             correctId: 'irregGapCorrect', wrongId: 'irregGapWrong', gapMode: true
         };
         function irregGapStart() { makeVerbCard(irregGapState, irregGapOpts); }
+        document.getElementById('irregGapNext').addEventListener('click', () => nextVerb(irregGapState, irregGapOpts));
 
         // ---- Mode switching ----
         let currentMode = 'type';
