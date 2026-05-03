@@ -503,11 +503,24 @@
             }
         }
         function typeNext() {
-            if (!typeState.waiting) {
+            if (typeState.waiting) { typeAdvance(); return; }
+            const inp = document.getElementById('typeAnswer');
+            const q = typeState.questions[typeState.idx];
+            const fb = document.getElementById('typeFeedback');
+            if (inp.value.trim() && normalize(inp.value) === normalize(q.answer)) {
+                typeState.correct++;
+                inp.className = 'correct';
+                document.getElementById('typeCorrect').textContent = typeState.correct;
+                fb.textContent = 'Correct!';
+                fb.className = 'feedback correct-feedback';
+            } else {
                 typeState.wrong++;
+                inp.className = 'wrong';
                 document.getElementById('typeWrong').textContent = typeState.wrong;
+                fb.textContent = `Wrong! The correct answer is: ${q.answer}`;
+                fb.className = 'feedback wrong-feedback';
             }
-            typeAdvance();
+            typeState.waiting = true;
         }
         document.getElementById('typeAnswer').addEventListener('keydown', (e) => {
             if (e.key !== 'Enter') return;
@@ -617,19 +630,17 @@
             }
         }
         function quizNext() {
-            if (!quizState.answered) {
-                const q = quizState.questions[quizState.idx];
-                quizState.wrong++;
-                document.getElementById('quizWrong').textContent = quizState.wrong;
-                document.querySelectorAll('#quizChoices button').forEach(b => {
-                    b.disabled = true;
-                    if (normalize(b.textContent) === normalize(q.answer)) {
-                        b.classList.add('choice-correct');
-                    }
-                });
-                quizState.answered = true;
-            }
-            quizAdvance();
+            if (quizState.answered) { quizAdvance(); return; }
+            const q = quizState.questions[quizState.idx];
+            quizState.wrong++;
+            document.getElementById('quizWrong').textContent = quizState.wrong;
+            document.querySelectorAll('#quizChoices button').forEach(b => {
+                b.disabled = true;
+                if (normalize(b.textContent) === normalize(q.answer)) {
+                    b.classList.add('choice-correct');
+                }
+            });
+            quizState.answered = true;
         }
         function quizAnswer(btn, chosen, correctAnswer) {
             if (quizState.answered) return;
@@ -757,11 +768,8 @@
             }
         }
         function nextVerb(state, opts) {
-            if (!state.waiting) {
-                state.wrong++;
-                document.getElementById(opts.wrongId).textContent = state.wrong;
-            }
-            advanceVerb(state, opts);
+            if (state.waiting) { advanceVerb(state, opts); return; }
+            submitVerb(state, opts, state.inputs);
         }
 
         let irregAllState = {};
