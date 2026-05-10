@@ -406,41 +406,78 @@
             }
         ];
 
-        const irregularVerbs = [
-            { de: "klingeln/läuten", forms: ["ring", "rang", "rung"] },
-            { de: "suchen", forms: ["seek", "sought", "sought"] },
-            { de: "verkaufen", forms: ["sell", "sold", "sold"] },
-            { de: "senden/schicken", forms: ["send", "sent", "sent"] },
-            { de: "schütteln", forms: ["shake", "shook", "shaken"] },
-            { de: "scheinen", forms: ["shine", "shone", "shone"] },
-            { de: "schießen", forms: ["shoot", "shot", "shot"] },
-            { de: "zeigen", forms: ["show", "showed", "shown/showed"] },
-            { de: "schließen", forms: ["shut", "shut", "shut"] },
-            { de: "sinken", forms: ["sink", "sank", "sunk"] }
+        const irregularVerbSets = [
+            {
+                name: "Verben Set 1 (ring–sink)",
+                verbs: [
+                    { de: "klingeln/läuten", forms: ["ring", "rang", "rung"] },
+                    { de: "suchen", forms: ["seek", "sought", "sought"] },
+                    { de: "verkaufen", forms: ["sell", "sold", "sold"] },
+                    { de: "senden/schicken", forms: ["send", "sent", "sent"] },
+                    { de: "schütteln", forms: ["shake", "shook", "shaken"] },
+                    { de: "scheinen", forms: ["shine", "shone", "shone"] },
+                    { de: "schießen", forms: ["shoot", "shot", "shot"] },
+                    { de: "zeigen", forms: ["show", "showed", "shown/showed"] },
+                    { de: "schließen", forms: ["shut", "shut", "shut"] },
+                    { de: "sinken", forms: ["sink", "sank", "sunk"] }
+                ]
+            },
+            {
+                name: "Verben Set 2 (slide–tell)",
+                verbs: [
+                    { de: "rutschen/gleiten", forms: ["slide", "slid", "slid"] },
+                    { de: "riechen", forms: ["smell", "smelt", "smelt"] },
+                    { de: "ausgeben/verbringen", forms: ["spend", "spent", "spent"] },
+                    { de: "verschütten", forms: ["spill", "spilt", "spilt"] },
+                    { de: "springen", forms: ["spring", "sprang", "sprung"] },
+                    { de: "stechen", forms: ["sting", "stung", "stung"] },
+                    { de: "stinken", forms: ["stink", "stank", "stunk"] },
+                    { de: "schwören", forms: ["swear", "swore", "sworn"] },
+                    { de: "zerreißen/reißen", forms: ["tear", "tore", "torn"] },
+                    { de: "erzählen/sagen", forms: ["tell", "told", "told"] }
+                ]
+            }
         ];
         const formLabels = ["Infinitiv", "Past Simple", "Past Participle"];
 
         let currentSetIdx = 'all';
+        let currentVerbSetIdx = 'all';
         function getVocab() {
             if (currentSetIdx === 'all') return sets.flatMap(s => s.words);
             return sets[currentSetIdx].words;
+        }
+        function getIrregularVerbs() {
+            if (currentVerbSetIdx === 'all') return irregularVerbSets.flatMap(s => s.verbs);
+            return irregularVerbSets[currentVerbSetIdx].verbs;
         }
 
         // Build set picker
         const setPicker = document.getElementById('setPicker');
         const setSelect = document.createElement('select');
-        const allOpt = document.createElement('option');
-        allOpt.value = 'all';
-        allOpt.textContent = 'Alles lernen';
-        setSelect.appendChild(allOpt);
-        sets.forEach((s, i) => {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = s.name;
-            setSelect.appendChild(opt);
-        });
+        function populateSetPicker(mode) {
+            const isVerbMode = mode === 'irregAll' || mode === 'irregGap';
+            const collection = isVerbMode ? irregularVerbSets : sets;
+            const current = isVerbMode ? currentVerbSetIdx : currentSetIdx;
+            setSelect.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = 'Alles lernen';
+            setSelect.appendChild(allOpt);
+            collection.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = s.name;
+                setSelect.appendChild(opt);
+            });
+            setSelect.value = current === 'all' ? 'all' : String(current);
+        }
         setSelect.addEventListener('change', () => {
-            currentSetIdx = setSelect.value === 'all' ? 'all' : parseInt(setSelect.value);
+            const val = setSelect.value === 'all' ? 'all' : parseInt(setSelect.value);
+            if (currentMode === 'irregAll' || currentMode === 'irregGap') {
+                currentVerbSetIdx = val;
+            } else {
+                currentSetIdx = val;
+            }
             switchMode(currentMode);
         });
         setPicker.appendChild(setSelect);
@@ -665,7 +702,7 @@
 
         // ---- MODE: Irregular verbs (shared logic) ----
         function buildVerbQuestions(gapMode) {
-            const qs = irregularVerbs.map(v => {
+            const qs = getIrregularVerbs().map(v => {
                 const q = { de: v.de, forms: v.forms };
                 if (gapMode) q.given = Math.floor(Math.random() * 3);
                 return q;
@@ -800,15 +837,13 @@
             type: typeStart, flashcard: flashStart, quiz: quizStart,
             irregAll: irregAllStart, irregGap: irregGapStart
         };
-        const usesVocabSet = { type: true, flashcard: true, quiz: true, irregAll: false, irregGap: false };
-
         function switchMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
             document.querySelectorAll('.menu button').forEach(b => b.classList.remove('active'));
             document.querySelector(`.menu button[data-mode="${mode}"]`).classList.add('active');
             document.getElementById(modes[mode]).style.display = '';
-            document.getElementById('setPicker').style.display = usesVocabSet[mode] ? '' : 'none';
+            populateSetPicker(mode);
             starters[mode]();
         }
 
